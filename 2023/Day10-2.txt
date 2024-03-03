@@ -1,0 +1,258 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+using System.Timers;
+using System.Linq;
+using System.Reflection;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {       
+        static void Main(string[] args)
+        {
+            string line;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_10_input.txt");
+            List<char[]> pipes = new List<char[]>();
+            List<int[]> flags = new List<int[]>();
+            line = sr.ReadLine()!;
+
+            
+            int[] current = new int[2] { 0, 0 };
+            int[] start = Array.Empty<int>();
+            bool haveStart = false;
+            while (line != null && !haveStart)
+            {
+                for (int i = 0; i < line.Length; i++)//檢查column
+                {
+                    if (line[i] == 'S')
+                    {
+                        start = new int[2] { current[0],i };
+                        haveStart = true;
+                        break;
+                    }
+                }
+                current[0]++;//row ++，主要是紀錄起點位置用
+                do
+                {
+                    pipes.Add(line.ToCharArray());
+                    flags.Add(new int[line.Length]);
+                    line = sr.ReadLine()!;
+                }
+                while (haveStart && line != null);//如果起點找到了就做到完
+            }
+
+            Dictionary<char, int[][]> maps = new Dictionary<char, int[][]>()
+            {
+                //[0][1]對應進入方向，[2][3]對應走出方向，一種pipe會有兩種進出方向
+                {'|',new int[][]{new int[]{ 1,0,1,0 },new int[]{ -1,0,-1,0 } } },
+                {'-',new int[][]{new int[]{ 0,1,0,1 },new int[]{ 0,-1,0,-1 } } },
+                {'L',new int[][]{new int[]{ 1,0,0,1 },new int[]{ 0,-1,-1,0 } } },
+                {'J',new int[][]{new int[]{ 1,0,0,-1},new int[]{ 0,1,-1,0 } } },
+                {'7',new int[][]{new int[]{ 0,1,1,0 },new int[]{ -1,0,0,-1 } } },
+                {'F',new int[][]{new int[]{ 0,-1,1,0 },new int[]{ -1,0,0,1 } } },
+                {'.',new int[][]{ new int[] { 0, 0, 0, 0 }, new int[] { 0, 0, 0, 0 } } //湊key用
+                }
+            };
+
+            //檢查出發方向，記錄起點
+            
+            flags[start[0]][start[1]] = 1;
+            int[] direction = new int[2];
+            for(int i = -1;i <= 1; i++)
+            {
+                for(int j = -1;j <= 1; j++)
+                {
+                    if (
+                        (i == 0 && j == 0) || //不含0,0
+                        (i != 0 && j != 0) || //因為只能走上下左右，斜方向不能走
+                        start[0] + i < 0 ||   //確認邊界
+                        start[0] + i >= pipes.Count ||
+                        start[1] + j < 0 ||
+                        start[1] + j >= pipes[0].Length
+                        ) continue;
+
+                    char pipe = pipes[start[0] + i][start[1] + j];
+                    int[][] map = maps[pipe];
+
+                    //確認pipe同時要確認進入方向可以進入
+                    if (pipe != '.' && (
+                        (map[0][0] == i && map[0][1] == j) ||
+                         (map[1][0] == i && map[1][1] == j)
+                        ))
+                    {
+                        current[0] = start[0];
+                        current[1] = start[1];
+                        direction[0] += i;
+                        direction[1] += j;
+                    }
+                    if (!(direction[0] == 0 && direction[1] == 0)) break;
+                }
+                if (!(direction[0] == 0 && direction[1] == 0)) break;
+            }
+
+            //確認方向開始計步，走到結束            
+            int[] startPipeDescribe = new int[4];//[0][1]對應進入方向，[2][3]對應走出方向
+            startPipeDescribe[2] = direction[0];
+            startPipeDescribe[3] = direction[1];
+            //紀錄範圍內的邊界
+            Dictionary<int, int[]> colsBoundary = new Dictionary<int, int[]>();
+            int[] rowsBoundary = new int[] { Int32.MaxValue, Int32.MinValue };
+
+
+            RecordBoundary(start,ref colsBoundary);
+            if (start[0] < rowsBoundary[0])
+                rowsBoundary[0] = start[0];
+
+            if (start[0] > rowsBoundary[1])
+                rowsBoundary[1] = start[0];
+
+            while (true)
+            {
+                current[0] += direction[0];
+                current[1] += direction[1];
+                if (flags[current[0]][current[1]] != 0) break;//確認已走一圈
+                
+                flags[current[0]][current[1]] = 1;
+                RecordBoundary(current, ref colsBoundary);
+                if (current[0] < rowsBoundary[0])
+                    rowsBoundary[0] = current[0];
+
+                if (current[0] > rowsBoundary[1])
+                    rowsBoundary[1] = current[0];
+
+
+                int[][] map = maps[pipes[current[0]][current[1]]];
+
+                if (map[0][0] == direction[0] && map[0][1] == direction[1])
+                {
+                    direction[0] = map[0][2];
+                    direction[1] = map[0][3];
+                }
+                else
+                {
+                    direction[0] = map[1][2];
+                    direction[1] = map[1][3];
+                }
+            }
+
+            sr.Close();
+
+            startPipeDescribe[0] = direction[0];
+            startPipeDescribe[1] = direction[1];
+            //確認起點的pipe長相
+            foreach(char key in maps.Keys)
+            {
+                int[] firstType = maps[key][0];
+                int[] secondType = maps[key][1];
+                if (
+                    (startPipeDescribe[0] == firstType[0] && startPipeDescribe[1] == firstType[1] && startPipeDescribe[2] == firstType[2] && startPipeDescribe[3] == firstType[3]) ||
+                    (startPipeDescribe[0] == secondType[0] && startPipeDescribe[1] == secondType[1] && startPipeDescribe[2] == secondType[2] && startPipeDescribe[3] == secondType[3])
+                    )
+                {
+                    pipes[start[0]][start[1]] = key;
+                    break;
+                }
+            }
+
+            //因為by row檢查，檢查內外的方法是抄別人的(原理沒搞懂)
+            //(1)如果是奇數 | 就是內部，偶數為外部
+            //(2)LJ為進出同row視為0，L7為進出不同row視為1
+            //(3)by row 遇到 L後必定會遇到J或7才有可能遇到flags != 1(才有機會計算nests)，所以必定能決定halfVerticalPipe最後是0還是1才計算nests
+            //(4)不是只有.計算nests，所以用flags != 1區別
+            //(5)最初區分內外的是靠boundary後續就靠by row判斷
+            //(6)這題的test case很全面，可多檢查
+            //資料來源
+            //https://www.reddit.com/r/adventofcode/comments/18ffnn6/2023_day_10_part_2_very_wierd_solution_that/
+            //https://www.reddit.com/r/adventofcode/comments/18ey1s7/2023_day_10_part_2_stumped_on_how_to_approach_this/
+            HashSet<char> upVerticalPipes = new HashSet<char>{'L','J'};
+            HashSet<char> downVerticalPipes = new HashSet<char> { 'F', '7'};
+
+            int nests = 0;
+            //計算格子，用很像parentheses的方式
+            for (int i = rowsBoundary[0]; i <= rowsBoundary[1]; i++)
+            {
+                double vertical = 0; bool upHalfVertical = false; bool downHalfVertical = false;
+                for (int j = colsBoundary[i][0]; j < colsBoundary[i][1]; j++)
+                {
+                    if(flags[i][j] == 1)
+                    {
+                        if (pipes[i][j] == '|')
+                        {
+                            vertical += 1;
+                        }
+                        else if (upVerticalPipes.Contains(pipes[i][j]))
+                        {
+                            if (upHalfVertical)
+                                upHalfVertical = false;
+                            else
+                                upHalfVertical = true;
+                        }
+                        else if (downVerticalPipes.Contains(pipes[i][j]))
+                        {
+                            if (downHalfVertical)
+                                downHalfVertical = false;
+                            else
+                                downHalfVertical = true;
+
+                           
+                        }
+
+                        continue;
+                    }
+
+                    if (upHalfVertical && downHalfVertical)
+                    {
+                        upHalfVertical = false;
+                        downHalfVertical = false;
+                        vertical += 1;
+                    }
+
+                    if (vertical % 2 != 0) //奇數或小數
+                        nests++;                                     
+                }
+            }
+
+            Console.WriteLine(nests);
+            Console.ReadLine();
+            //硬寫陣列寫到頭殼爆裂
+        }
+
+        private static void RecordBoundary(int[] _position, ref Dictionary<int, int[]> _colsBoundary)
+        {
+            if (_colsBoundary.ContainsKey(_position[0]))
+            {
+                if (_position[1] < _colsBoundary[_position[0]][0])
+                    _colsBoundary[_position[0]][0] = _position[1];
+
+                if (_position[1] > _colsBoundary[_position[0]][1])
+                    _colsBoundary[_position[0]][1] = _position[1];
+            }
+            else
+                _colsBoundary[_position[0]] = new int[] { _position[1], _position[1] };            
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if (c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+
+        private static long GCD(long num1, long num2)
+        {
+            long min = 0;
+            long max = 0;
+            long maxModMin = 0;
+            min = Math.Min(num1, num2);
+            max = Math.Max(num1, num2);
+            maxModMin = max % min;
+            return maxModMin > 0 ? GCD(min, maxModMin) : min;
+        }
+
+        private static long LCM(long num1, long num2)
+        {
+            return num1 * num2 / GCD(num1, num2);
+        }
+    }
+}

@@ -1,0 +1,41 @@
+using System.IO;
+namespace AdventCodeConsole
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            string line;
+            int result = 0;
+            StreamReader sr = new StreamReader("C:\\Temp\\adventofcode_2023_day_1_input.txt");
+            line= sr.ReadLine()!;
+
+            while (line != null)
+            {
+                int left = -1;
+                int right = -1;                
+                for (int i = 0; i < line.Length; i++)
+                {
+                    if (left == -1 && isNumeric(line[i]))
+                        left = i;
+                    if (right == -1 && isNumeric(line[line.Length-1-i]))
+                        right = line.Length - 1 - i;
+
+                    if (left != -1 && right != -1) break;
+                }
+                result += Convert.ToInt32((line[left].ToString() + line[right].ToString()));
+                line = sr.ReadLine()!;
+            }
+            sr.Close();
+            Console.WriteLine(result);
+            Console.ReadLine();
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if(c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+    }
+}

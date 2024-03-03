@@ -1,0 +1,63 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Dictionary<string,int> words = new Dictionary<string, int>() 
+            { {"red" , 12}, {"green", 13}, {"blue", 14}};
+            string line;
+            int result = 0;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_2_input.txt");
+            line= sr.ReadLine()!+";";//因為原本題目沒有結尾所以自己加，不然會漏了結尾判斷，或自己回全做完補做結尾判斷也行
+
+            while (line != null && line != ";")//因為這邊null+;變;，所以防呆判斷一下
+            {
+                string[] gameSplit = line.Split(':');
+                int gameID = int.Parse(gameSplit[0].Remove(0,5));
+                bool stopFlag = false;
+                int firstSpace = -3;//初始順序也有意義，firstSpace<secondSpace<endSingal，讓後續判斷他們之間的關係也是絕對的
+                int secondSpace = -2;
+                int endSingal = -1;
+                //就一般的字串拆解
+                for (int i = 0; i < gameSplit[1].Length; i++)
+                {                                       
+                    if (gameSplit[1][i] == ';' || gameSplit[1][i] == ',')
+                    {
+                        endSingal = i;
+                        int count = int.Parse(gameSplit[1].Substring(firstSpace+1, secondSpace-firstSpace-1));
+                        if (words[gameSplit[1].Substring(secondSpace+1,endSingal-secondSpace-1)] < count)
+                        {
+                            stopFlag = true;//超過標準就能跳出迴圈了
+                            break;
+                        }
+                        continue; //讓確定完判斷就跳過其他判斷避免誤判，或要排處理流程順序，像現在end -> first的處理順序不用continue也行，但基本上沒人會知道這裡不注意順序會導致互相影響
+                    }
+
+                    if (gameSplit[1][i] == ' ' && secondSpace < firstSpace && secondSpace < endSingal)
+                    {
+                        secondSpace = i;
+                        continue;
+                    }
+                        
+                    if (gameSplit[1][i] == ' ' && firstSpace < endSingal)
+                    {
+                        firstSpace = i;
+                        continue;
+                    }                        
+                }
+
+                line = sr.ReadLine()! + ";";
+                if (stopFlag) continue;
+                result += gameID;                
+            }
+            sr.Close();
+            Console.WriteLine(result);
+            Console.ReadLine();
+        }
+    }
+}

@@ -1,0 +1,82 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            string line;
+            int result = 0;
+            StreamReader sr = new StreamReader("");
+            line= sr.ReadLine()!;
+            List<char[]> question = new List<char[]>();//把題目變成陣列，如果長寬確定可用char[][]如果都不確定就用List<List<char>>
+            while (line != null)
+            {                
+                question.Add(line.ToArray());
+                line = sr.ReadLine()!;
+            }
+
+            for(int i = 0; i < question.Count; i++)
+            {
+                for(int j = 0; j < question[i].Length; j++)
+                {
+                    if (question[i][j] != '.' && !isNumeric(question[i][j]))
+                    {
+                        result += ParseNumber(question, i, j-1);//左
+                        result += ParseNumber(question, i, j+1);//右
+                        result += ParseNumber(question, i-1, j);//上
+                        result += ParseNumber(question, i-1, j-1);//左上
+                        result += ParseNumber(question, i-1, j+1);//右上
+                        result += ParseNumber(question, i+1, j);//下
+                        result += ParseNumber(question, i+1, j-1);//左下
+                        result += ParseNumber(question, i+1, j+1);//右下
+                    }
+                }
+            }
+
+            sr.Close();
+            Console.WriteLine(result);
+            Console.ReadLine();
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if (c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+        
+        private static int ParseNumber(List<char[]> question, int row, int col)
+        {
+            //基本上這個方法跟這題目完全耦合，只是因為要叫8次所以獨立出來
+            if(!(row>=0 && row <= question.Count -1)) return 0;//判斷邊界
+
+            string numberStr = "";
+            if(col>= 0 && col<= question[0].Length - 1 && isNumeric(question[row][col]))//判斷邊界和起點的值來確定要不要繼續
+                numberStr += question[row][col];
+            else
+                return 0;
+
+            int left = 1;//因為起點有了，左右發展就從1開始
+            int right = 1;
+            while (col - left >= 0 && isNumeric(question[row][col - left]))//每次都要確定邊界避免錯誤
+            {
+                numberStr = question[row][col - left] + numberStr;//左右發展一個是加在前，一個是加在後，為了不混淆就不用+=之類的，就普通的字串合併讓格式左右看起來有規律
+                question[row][col - left] = '.';//已取用完的要填上
+                left++;
+            }
+
+            while (col + right <= question[0].Length-1 && isNumeric(question[row][col + right]))
+            {
+                numberStr = numberStr + question[row][col + right];
+                question[row][col + right] = '.';
+                right++;
+            }
+
+            return numberStr == "" ? 0 : int.Parse(numberStr);//為了方便使用同時也因為不會影響計算速度太多，不符合條件的都返回0
+        }
+    }
+}

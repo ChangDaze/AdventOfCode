@@ -1,0 +1,57 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+using System.Timers;
+using System.Linq;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {       
+        static void Main(string[] args)
+        {
+            string line;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_8_input.txt");
+            line = sr.ReadLine()!;
+            Queue<char> queue = new Queue<char>();
+            foreach (char c in line)
+                queue.Enqueue(c);
+            line = sr.ReadLine()!; line = sr.ReadLine()!;
+
+            Dictionary<string, string[]> map = new Dictionary<string, string[]>();
+            while (line != null)
+            {
+                map.Add(line.Substring(0, 3),
+                        new string[] { line.Substring(7, 3), line.Substring(12, 3) });//用電文方式解就能很簡單，雖然不靈活
+                line = sr.ReadLine()!;
+            }
+
+            string location = "AAA";
+            int result = 0;
+
+            while(location != "ZZZ")
+            {
+                char direction = queue.Dequeue();
+                if (direction == 'L')
+                    location = map[location][0];
+                else
+                    location = map[location][1];
+                queue.Enqueue(direction);
+                result++;
+            }
+
+
+            sr.Close();
+            Console.WriteLine(result);
+            Console.ReadLine();
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if (c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+
+    }
+}

@@ -1,0 +1,112 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {       
+        static void Main(string[] args)
+        {
+            //原本dictionary用的很爽，最後記憶體爆裂
+            string line;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_5_input.txt");
+            line= sr.ReadLine()!;
+            List<long[]> result = new List<long[]>();
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                if (isNumeric(line[i]))
+                {
+                    long[] tempArray = new long[2];
+                    List<long> tempList = line.Substring(i, line.Length - i).Split(' ').Select(x=>Convert.ToInt64(x)).ToList();
+                    for (int j = 0; j < tempList.Count; j++)
+                    {
+                        if(j%2==0)
+                            tempArray[0] = tempList[j];
+                        else
+                        {
+                            tempArray[1] = tempArray[0] + tempList[j]-1;//用範圍【點】來存，記得-1
+                            result.Add(tempArray);
+                            tempArray= new long[2];
+                        }                            
+                    }
+                    break;
+                }
+            }            
+
+            line = sr.ReadLine()!; line = sr.ReadLine()!;
+            List<List<long[]>> maps = new List<List<long[]>>();
+            List<long[]> tempMap = new List<long[]>();
+            while (line is not null)
+            {
+                if (line == "")
+                {
+                    maps.Add(tempMap);
+                    tempMap = new List<long[]>();//不能用clear，會把原本記憶體清除
+                }
+                else if (isNumeric(line[0]))
+                {
+                    long[] tempInfo = line.Split(' ').Select(x => Convert.ToInt64(x)).ToArray();
+                    long[] tempOrderInfo = new long[4];//用範圍【點】來存
+                    tempOrderInfo[0] = tempInfo[1];
+                    tempOrderInfo[1] = tempInfo[1]+tempInfo[2]-1;//記得-1
+                    tempOrderInfo[2] = tempInfo[0];
+                    tempOrderInfo[3] = tempInfo[0]+tempInfo[2]-1;//tempOrderInfo[3]其實沒特別意義了，單純順手存
+                    tempMap.Add(tempOrderInfo);
+                }
+                line = sr.ReadLine()!;
+            }
+
+            maps.Add(tempMap);
+
+            foreach (List<long[]> map in maps)
+            {                
+                List<long[]> tempResult = new List<long[]>();//用來暫存投射結果
+                for (int i = 0;i < result.Count ; i++)
+                {                    
+                    for (int j = 0; j < map.Count; j++)
+                    {                        
+                        if (result[i][1] >= map[j][0] && result[i][0] <= map[j][1])
+                        {
+                            long firstSectionIndex = Math.Max(result[i][0], map[j][0]);//找intersection，也就是重疊中的【最小範圍】-> left bound max + right boubd min
+                            long SecondSectionIndex = Math.Min(result[i][1], map[j][1]);
+                            //小於intersaction
+                            if (firstSectionIndex - result[i][0] > 0)
+                                result.Add(new long[] { result[i][0], firstSectionIndex - 1 });//記得-1排除bound
+                            //intersaction
+                            tempResult.Add(new long[] { firstSectionIndex - map[j][0] + map[j][2], SecondSectionIndex - map[j][0] + map[j][2]});//map投射
+                            //大於intersaction
+                            if (result[i][1] - SecondSectionIndex > 0)
+                                result.Add(new long[] { SecondSectionIndex+1, result[i][1] });//記得+1排除bound
+                            //沒intersection到的部份用add加回result重新檢查
+                            break;
+                        }
+
+                        if (j == map.Count-1) 
+                            tempResult.Add(result[i]);//都沒比對到就維持自己
+                    }
+                }
+                result = tempResult;//都跑完就更新投射結果，result.Count只會>=自己原本的【Count】
+            }            
+
+            sr.Close();
+
+
+            Console.WriteLine(result.Min(x => x[0]));
+            Console.ReadLine();
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if (c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+
+        //後續可發展部分
+        //1. map可以在建立前order，result可以在【每次比對】前order，這樣切割3 section時，可以不再比對第1 section(因為小的部分都互相比對完了)，但第3 section仍要
+        //2. Map對應其實就是source和detination的差值，這從testcase可以很容易看出，可以此來簡化我一直加加減減得過程
+
+    }
+}

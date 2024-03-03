@@ -1,0 +1,122 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+using System.Timers;
+using System.Linq;
+using System.Reflection;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {       
+        static void Main(string[] args)
+        {
+            string line;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_12_input.txt");            
+            line = sr.ReadLine()!;
+            
+            int sum = 0;
+
+            while (line != null)
+            {
+                string[] split = line.Split(' ');
+                Queue<int> groupLens = new Queue<int>();
+                foreach(string groupLen in split[1].Split(','))                
+                    groupLens.Enqueue(int.Parse(groupLen));
+                sum += Recursive(split[0], groupLens);
+
+                line = sr.ReadLine()!;                
+            }
+            sr.Close();
+                        
+            Console.WriteLine(sum);
+            Console.ReadLine();
+        }
+
+        private static int Recursive(string pattern, Queue<int> groupLens)
+        {
+            while(pattern.Length > 0 && groupLens.Count > 0)
+            {
+                switch (pattern[0])
+                {
+                    case '.':
+                        pattern = pattern.Substring(1);
+                        break;
+                    case '?':
+                        return QuestionProcess(pattern, groupLens);
+                    case '#':
+                        return HashProcess(pattern, groupLens);
+                    default:
+                        pattern = "";
+                        break;
+                }
+            }
+
+            return EndProcess(pattern, groupLens);
+        }
+
+        private static int QuestionProcess(string pattern, Queue<int> groupLens)
+        {
+            return Recursive('.' + pattern.Substring(1), new Queue<int>(groupLens)) + 
+                Recursive('#'+pattern.Substring(1), new Queue<int>(groupLens));
+        }
+
+        private static int HashProcess(string pattern, Queue<int> groupLens)
+        {
+            int groupLen = groupLens.Dequeue();
+            int potentialGroup = pattern.TakeWhile(s => s == '#' || s == '?').Count();
+
+            if (potentialGroup < groupLen)
+                return 0;
+            else if (pattern.Length == groupLen)
+                return EndProcess("",groupLens);
+            else if (pattern[groupLen] == '#')
+                return 0;
+            else
+                return Recursive('.'+pattern.Substring(groupLen+1), new Queue<int>(groupLens));
+        }
+
+        private static int EndProcess(string pattern, Queue<int> groupLens)
+        {
+            return (!pattern.Contains('#')) && groupLens.Count == 0 ? 1 : 0;
+        }
+
+        //下面都是遺留的公式，沒用到就不用在意
+        private static void RecordBoundary(int[] _position, ref Dictionary<int, int[]> _colsBoundary)
+        {
+            if (_colsBoundary.ContainsKey(_position[0]))
+            {
+                if (_position[1] < _colsBoundary[_position[0]][0])
+                    _colsBoundary[_position[0]][0] = _position[1];
+
+                if (_position[1] > _colsBoundary[_position[0]][1])
+                    _colsBoundary[_position[0]][1] = _position[1];
+            }
+            else
+                _colsBoundary[_position[0]] = new int[] { _position[1], _position[1] };            
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if (c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+
+        private static long GCD(long num1, long num2)
+        {
+            long min = 0;
+            long max = 0;
+            long maxModMin = 0;
+            min = Math.Min(num1, num2);
+            max = Math.Max(num1, num2);
+            maxModMin = max % min;
+            return maxModMin > 0 ? GCD(min, maxModMin) : min;
+        }
+
+        private static long LCM(long num1, long num2)
+        {
+            return num1 * num2 / GCD(num1, num2);
+        }
+    }
+}

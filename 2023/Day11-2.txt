@@ -1,0 +1,133 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+using System.Timers;
+using System.Linq;
+using System.Reflection;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {       
+        static void Main(string[] args)
+        {
+            string line;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_11_input.txt");
+            List<int[]> positions = new List<int[]>();
+            HashSet<int> extensionRows = new HashSet<int>();
+            HashSet<int> extensionCols = new HashSet<int>();
+            line = sr.ReadLine()!;
+            for (int i = 0;i<line.Length;i++) extensionCols.Add(i);//一開始預設所有col是空的
+            
+            int currentRow = 0;
+
+            while (line != null)
+            {
+                bool haveStar = false;//row是否有star的flag
+                for (int i = 0; i < line.Length; i++)//檢查column
+                {
+                    if (line[i] == '#')
+                    {
+                        //當發現有star從row和col移除extention候補index，並加入要檢查的star position
+                        if (!haveStar) haveStar = true;
+                        extensionCols.Remove(i);
+                        positions.Add(new int[] { currentRow, i});
+                    }                        
+                }
+
+                if (!haveStar)                
+                    extensionRows.Add(currentRow);                
+
+                currentRow++;//row ++，主要是紀錄位置用                
+                line = sr.ReadLine()!;                
+            }
+            sr.Close();
+
+            double distances = 0;
+            double times = 1000000;//extention倍數
+            //HashSet<string> record = new HashSet<string>(); //有用two pointer這個dictionary理論上就可以不用了
+
+            for(int i = 0; i < positions.Count; i++)
+            {
+                for(int j = i; j < positions.Count; j++)//就單純寫過leetcode知道這樣two pointer可以把每個pair都直接走過一遍
+                {
+                    if(i==j) continue;
+
+                    //string pair = i > j ? (j.ToString() + ',' + i.ToString()) : (i.ToString() + ',' + j.ToString()); //小的在前
+                    //if(record.Contains(pair)) continue;
+
+                    int[] array = new int[4];// r小、r大、c小、c大
+                    if (positions[i][0] > positions[j][0])
+                    {
+                        array[0] = positions[j][0];
+                        array[1] = positions[i][0];
+                    }
+                    else
+                    {
+                        array[0] = positions[i][0];
+                        array[1] = positions[j][0];
+                    }
+
+                    if (positions[i][1] > positions[j][1])
+                    {
+                        array[2] = positions[j][1];
+                        array[3] = positions[i][1];
+                    }
+                    else
+                    {
+                        array[2] = positions[i][1];
+                        array[3] = positions[j][1];
+                    }
+
+                    distances += (array[1] - array[0] + array[3] - array[2] 
+                        + (extensionRows.Where(x => x > array[0] && x < array[1]).Count()* (times-1))
+                        + (extensionCols.Where(x => x > array[2] && x < array[3]).Count()* (times-1)));
+                    //(times-1)要減去array計算本身有n算的1次 
+
+                    //record.Add(pair);
+                }
+            }
+            
+            Console.WriteLine(distances);
+            Console.ReadLine();
+        }
+
+        //下面都是遺留的公式，沒用到就不用在意
+        private static void RecordBoundary(int[] _position, ref Dictionary<int, int[]> _colsBoundary)
+        {
+            if (_colsBoundary.ContainsKey(_position[0]))
+            {
+                if (_position[1] < _colsBoundary[_position[0]][0])
+                    _colsBoundary[_position[0]][0] = _position[1];
+
+                if (_position[1] > _colsBoundary[_position[0]][1])
+                    _colsBoundary[_position[0]][1] = _position[1];
+            }
+            else
+                _colsBoundary[_position[0]] = new int[] { _position[1], _position[1] };            
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if (c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+
+        private static long GCD(long num1, long num2)
+        {
+            long min = 0;
+            long max = 0;
+            long maxModMin = 0;
+            min = Math.Min(num1, num2);
+            max = Math.Max(num1, num2);
+            maxModMin = max % min;
+            return maxModMin > 0 ? GCD(min, maxModMin) : min;
+        }
+
+        private static long LCM(long num1, long num2)
+        {
+            return num1 * num2 / GCD(num1, num2);
+        }
+    }
+}

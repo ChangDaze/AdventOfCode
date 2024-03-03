@@ -1,0 +1,100 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+using System.Timers;
+using System.Linq;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {       
+        static void Main(string[] args)
+        {
+            string line;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_8_input.txt");
+            line = sr.ReadLine()!;
+            List<char> record = new List<char>();
+            foreach (char c in line)
+                record.Add(c);
+            line = sr.ReadLine()!; line = sr.ReadLine()!;
+
+            List<string> routes = new List<string>();
+            Dictionary<string, string[]> map = new Dictionary<string, string[]>();
+            while (line != null)
+            {
+                string tempLocation = line.Substring(0, 3);
+                map.Add(tempLocation,
+                        new string[] { line.Substring(7, 3), line.Substring(12, 3) });//用電文方式解就能很簡單，雖然不靈活
+                if (tempLocation[2] == 'A')
+                    routes.Add(tempLocation);
+                line = sr.ReadLine()!;
+            }
+
+            int steps = 0;            
+            int routeIndex = 0;
+            List<int> stepsRecord = new List<int>();
+            char[] directionsArray = record.ToArray();
+            int direction = -1;
+            int directionIndex = -1;
+            while (routeIndex < routes.Count)
+            {
+                directionIndex++;
+                steps++;
+
+                if (directionIndex == directionsArray.Length) directionIndex = 0;
+
+                if (directionsArray[directionIndex] == 'L') direction = 0;
+                else direction = 1;
+             
+                routes[routeIndex] = map[routes[routeIndex]][direction];
+
+
+                if (routes[routeIndex][2] == 'Z')
+                {
+                    stepsRecord.Add(steps);
+                    steps = 0;
+                    routeIndex++;
+                    directionIndex = -1;
+                }
+
+                
+            }
+
+            long temp = stepsRecord[0];
+            for(int i = 1; i < stepsRecord.Count; i++)            
+                temp = LCM(temp, stepsRecord[i]);            
+
+
+            sr.Close();
+            Console.WriteLine(temp);
+            Console.ReadLine();
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if (c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+
+        private static long GCD(long num1, long num2)
+        {
+            long min = 0;
+            long max = 0;
+            long maxModMin = 0;
+            min = Math.Min(num1, num2);
+            max = Math.Max(num1, num2);
+            maxModMin = max % min;
+            return maxModMin > 0 ? GCD(min, maxModMin) : min;
+        }
+
+        private static long LCM(long num1, long num2)
+        {
+            return num1 * num2 / GCD(num1, num2);
+        }
+
+        //就...很不好說，就是要一個個去確認題目規律已陷入循環，但一般的逐步根本看不出來，下面的討論友幫忙整理規律，但說實話一定是額外花很多時間統計，除非已有經驗，如果是死題，可能會因此永遠無解
+        //https://www.reddit.com/r/adventofcode/comments/18dg1hw/2023_day_8_part_2_about_the_correctness_of_a/
+        //https://www.reddit.com/r/adventofcode/comments/18dfpub/2023_day_8_part_2_why_is_spoiler_correct/
+    }
+}

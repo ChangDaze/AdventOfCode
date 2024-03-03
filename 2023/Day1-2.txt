@@ -1,0 +1,54 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            //這題是文字和數字混合判斷
+            Dictionary<string,int> words = new Dictionary<string, int>() 
+            { {"one" , 1}, {"two", 2}, {"three", 3}, {"four", 4}, {"five", 5}, {"six", 6}, {"seven", 7}, {"eight", 8}, {"nine", 9},{"1" , 1}, {"2", 2}, {"3", 3}, {"4", 4}, {"5", 5}, {"6", 6}, {"7", 7}, {"8", 8}, {"9", 9} };
+            string line;
+            int result = 0;
+            StreamReader sr = new StreamReader("C:\\Temp\\adventofcode_2023_day_1_input.txt");
+            line= sr.ReadLine()!;
+
+            while (line != null)
+            {
+                int leftIndex = int.MaxValue;
+                int rightIndex = int.MinValue;
+                int left = 0;
+                int right = 0;
+
+                foreach (string key in words.Keys)
+                {
+                    //原本要用dictionary+文字開頭、dictionary+文字結尾來bychar判斷，但foreach key跟 O(n)好像一樣，所以就直接改用indexof了
+                    int tempLeftIndex = line.IndexOf(key);
+                    int tempRightIndex = line.LastIndexOf(key);
+
+                    if(tempLeftIndex > -1 && tempLeftIndex < leftIndex)
+                    {
+                        leftIndex = tempLeftIndex;
+                        left = words[key];
+                    }
+
+                    if (tempRightIndex > -1 && tempRightIndex + key.Length -1 > rightIndex)
+                    {
+                        rightIndex = tempRightIndex + key.Length - 1;
+                        right = words[key];
+                    }
+
+                }
+
+                result += (left*10+right);
+                line = sr.ReadLine()!;
+            }
+            sr.Close();
+            Console.WriteLine(result);
+            Console.ReadLine();
+        }
+    }
+}

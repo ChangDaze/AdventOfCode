@@ -1,0 +1,65 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            string line;
+            int result = 0;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_2_input.txt");
+            line= sr.ReadLine()!+";";//因為原本題目沒有結尾所以自己加，不然會漏了結尾判斷，或自己回全做完補做結尾判斷也行
+
+            while (line != null && line != ";")//因為這邊null+;變;，所以防呆判斷一下
+            {
+                line = line.Substring(line.IndexOf(":"));
+                //因為取出越多，代表至少有這些球，一樣單純的字串拆解
+                //https://www.reddit.com/r/adventofcode/comments/1890gxm/2023_day_2_part_2_eli5_what_its_asking_for/
+                Dictionary<string, int> words = new Dictionary<string, int>(){ 
+                    {"red" , int.MinValue},
+                    {"green", int.MinValue},
+                    {"blue", int.MinValue}};
+                int firstSpace = -3;//初始順序也有意義，firstSpace<secondSpace<endSingal，讓後續判斷他們之間的關係也是絕對的
+                int secondSpace = -2;
+                int endSingal = -1;
+                //就一般的字串拆解
+                for (int i = 0; i < line.Length; i++)
+                {                                       
+                    if (line[i] == ';' || line[i] == ',')
+                    {
+                        endSingal = i;
+                        int count = int.Parse(line.Substring(firstSpace+1, secondSpace-firstSpace-1));
+                        if (words[line.Substring(secondSpace + 1, endSingal - secondSpace - 1)] < count)
+                            words[line.Substring(secondSpace + 1, endSingal - secondSpace - 1)] = count;
+                        continue; //讓確定完判斷就跳過其他判斷避免誤判，或要排處理流程順序，像現在end -> first的處理順序不用continue也行，但基本上沒人會知道這裡不注意順序會導致互相影響
+                    }
+
+                    if (line[i] == ' ' && secondSpace < firstSpace && secondSpace < endSingal)
+                    {
+                        secondSpace = i;
+                        continue;
+                    }
+                        
+                    if (line[i] == ' ' && firstSpace < endSingal)
+                    {
+                        firstSpace = i;
+                        continue;
+                    }                        
+                }
+
+                int power = 1;//這樣相乘才不會出事
+                foreach(string key in words.Keys)                
+                    power *= words[key];
+                
+                result += power;
+                line = sr.ReadLine()! + ";";
+            }
+            sr.Close();
+            Console.WriteLine(result);
+            Console.ReadLine();
+        }
+    }
+}

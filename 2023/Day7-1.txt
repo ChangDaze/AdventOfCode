@@ -1,0 +1,102 @@
+using System.IO;
+using static System.Net.WebRequestMethods;
+using System.Threading;
+using System.Timers;
+using System.Linq;
+
+namespace AdventCodeConsole
+{
+    internal class Program
+    {       
+        static void Main(string[] args)
+        {
+            Dictionary<string, string> strengths = new Dictionary<string, string>()
+            {
+                //把排序號的手牌標示強度
+                {"5", "7" },
+                {"14", "6"},
+                {"23", "5"},
+                {"113", "4"},
+                {"122", "3"},                               
+                {"1112", "2"},
+                {"11111", "1"}
+            };
+            string line;
+            StreamReader sr = new StreamReader("C:\\Users\\chengdesu\\Desktop\\練習目錄\\AdventOfCode\\2023\\input\\adventofcode_2023_day_7_input.txt");
+            line = sr.ReadLine()!;
+
+            List<string[]> records = new List<string[]>(); // 1.strengths 2.hands replaced 3.bid
+            int result = 0;
+            while (line != null)
+            {
+                string temphands = "";
+                Dictionary<char,int> tempRecord = new Dictionary<char,int>();
+                for (int i = 0; i < line.Length; i++)
+                {
+                    if (line[i] != ' ')
+                    {
+                        //紀錄手牌頻率來確認強度
+                        if (tempRecord.ContainsKey(line[i])) tempRecord[line[i]]++;
+                        else tempRecord[line[i]] = 1;
+                        switch (line[i])
+                        {
+                            //把單個手牌強度代換成對應權重(ASCII中隨便取字母順序來用，用符號也可)，方便第二規則排序
+                            case 'T':
+                                temphands += 'A';
+                                break;
+                            case 'J':
+                                temphands += 'B';
+                                break;
+                            case 'Q':
+                                temphands += 'C';
+                                break;
+                            case 'K':
+                                temphands += 'D';
+                                break;
+                            case 'A':
+                                temphands += 'E';
+                                break;
+                            default:
+                                temphands += line[i];
+                                break;
+                        }
+                    }
+                    else//遇到空白就知道剩下的是bid
+                    {
+                        records.Add(new string[] //為储存方便就先都用字串記
+                            {
+                                strengths[string.Join("",tempRecord.Values.Select(x=>x.ToString()).OrderBy(x=>x))],//把手牌頻率投射成強度，1.取頻率 2.排序頻率 3.換成強度
+                                temphands,//把代換成對應權重的手牌記錄下來(手牌順序記得不能變)
+                                line.Substring(i+1)//籌碼，遇到空白後全是數字，要用時再拿出來轉成數字
+                            }
+                        );
+                        break;
+                    }                        
+                }               
+
+                line = sr.ReadLine()!;
+            }
+
+            records = records.OrderByDescending(x => x[0]).ThenByDescending(x => x[1]).ToList();//1.先依強度大到小 2.依單個手牌強度照順序大到小(此處用的是預設字串ASCII排序)
+
+            for (int i = 0; i < records.Count; i++)
+                result += (records.Count - i) * Convert.ToInt32(records[i][2]);
+
+
+            sr.Close();
+            Console.WriteLine(result);
+            Console.ReadLine();
+        }
+
+        private static bool isNumeric(char c)
+        {
+            if (c >= 48 && c <= 57)
+                return true;
+            return false;
+        }
+
+        //後續可發展部分
+        //1. 恩...，這題87%有數學解
+
+    }
+}
